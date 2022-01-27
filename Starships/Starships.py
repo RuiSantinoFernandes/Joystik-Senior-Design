@@ -29,6 +29,7 @@ sounds = 'sounds'
 bullet_sound = pygame.mixer.Sound(os.path.join(sounds, 'bullet_sound.wav'))
 laser_sound = pygame.mixer.Sound(os.path.join(sounds, 'laser_sound.wav'))
 rocket_sound = pygame.mixer.Sound(os.path.join(sounds, 'rocket_sound.wav'))
+player_hit_sound = pygame.mixer.Sound(os.path.join(sounds, 'player_hit_sound.wav'))
 
 
 #Creating black screen
@@ -62,7 +63,10 @@ pygame.time.set_timer(ADD_ZIPPER, 20000)
 
 #adding display for health left
 font = pygame.font.SysFont('arial', 22)
+game_over_font = pygame.font.SysFont('arial', 80, True)
 health_text = font.render('Health: ' + str(P1.health), True, GREEN)
+score_text = font.render('Score: ' + str(P1.score), True, GREEN)
+game_over_text = game_over_font.render('Game Over', True, BLACK)
 
 
 
@@ -122,6 +126,8 @@ while True:
     
     #updating health
     DISPLAYSURF.blit(health_text, (100, 550))
+    #updating score
+    DISPLAYSURF.blit(score_text, (100, 570))
 
     #cycling through all sprites, handles movement of sprite irregardless of type
     for entity in all_sprites:
@@ -153,6 +159,8 @@ while True:
                 if proj.rect.colliderect(enemy.rect):
                     #if sub 0 health kill enemy
                     if enemy.health - proj.damage <= 0:
+                        P1.score += enemy.worth
+                        score_text = font.render('Score: ' + str(P1.score), True, GREEN)
                         enemy.kill()
                     else:
                         enemy.health -= proj.damage
@@ -160,13 +168,23 @@ while True:
         else:
             for player in players:
                 if proj.rect.colliderect(player.rect):
+                    pygame.mixer.Sound.play(player_hit_sound)
                     #if sub 0 health kill player
                     if player.health - proj.damage <= 0:
                         health_text = font.render('Health: 0', True, GREEN)
                         player.kill()
+                        DISPLAYSURF.fill(RED)
+                        DISPLAYSURF.blit(game_over_text, (325, 250))
+                        pygame.display.update()
+                        for entity in all_sprites:
+                            entity.kill()
+                        time.sleep(3)
+                        pygame.quit()
+                        sys.exit()
                     #else just reduce
                     else:
                         player.health -= proj.damage
+                        proj.kill()
                         health_text = font.render('Health: ' + str(P1.health), True, GREEN)
     
     

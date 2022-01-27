@@ -25,6 +25,7 @@ class Player_Ship(pygame.sprite.Sprite):
         self.ID = ID
         self.proj_type = 'B'
         self.can_shoot = 0
+        self.score = 0
 
         #drawing simple blue square for player
         #note I will leave the different types of ships as colored rectangles for now
@@ -57,6 +58,7 @@ class Fighter(pygame.sprite.Sprite):
         #attributes for enemy_ship
         self.tick_adjuster = 0
         self.health = 1
+        self.worth = 1
         self.time_to_shoot = 0
         self.how_often_shoot = 100
         self.proj_type = 'B'
@@ -103,6 +105,7 @@ class Tanker(pygame.sprite.Sprite):
         #attributes for enemy_ship
         self.tick_adjuster = 0
         self.health = 5
+        self.worth = 5
         self.time_to_shoot = 0
         self.how_often_shoot = 250
         self.proj_type = 'R'
@@ -149,6 +152,7 @@ class Zipper(pygame.sprite.Sprite):
         #attributes for enemy_ship
         self.tick_adjuster = 0
         self.health = 2
+        self.worth = 2
         self.time_to_shoot = 0
         self.how_often_shoot = 100
         self.proj_type = 'L'
@@ -198,11 +202,12 @@ class Zipper(pygame.sprite.Sprite):
 
 class Bullet(pygame.sprite.Sprite):
 
-    def __init__(self, ship_center, from_player = True):
+    def __init__(self, ship_center, from_player = True, player = 'P1'):
         #attributes for bullet
         self.damage = 1
         self.speed = 0
         self.from_player = from_player
+        self.player = player
         if from_player:
             self.speed = -50
         else:
