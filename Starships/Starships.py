@@ -1,6 +1,6 @@
 import pygame, sys
 from pygame.locals import *
-import random, time, Classes
+import random, time, Classes, os
 
 
 #initializing game
@@ -24,6 +24,13 @@ ENEMY_MOVEMENT = [-20, 20]
 PLAYER_ID = 1
 ENEMY_ID = 5
 
+#creating different sounds for different projectiles
+sounds = 'sounds'
+bullet_sound = pygame.mixer.Sound(os.path.join(sounds, 'bullet_sound.wav'))
+laser_sound = pygame.mixer.Sound(os.path.join(sounds, 'laser_sound.wav'))
+rocket_sound = pygame.mixer.Sound(os.path.join(sounds, 'rocket_sound.wav'))
+
+
 #Creating black screen
 DISPLAYSURF = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 DISPLAYSURF.fill(BLACK)
@@ -34,21 +41,26 @@ pygame.display.set_caption("Starships")
 
 enemies = pygame.sprite.Group()
 players = pygame.sprite.Group()
-bullets = pygame.sprite.Group()
+projectiles = pygame.sprite.Group()
 all_sprites = pygame.sprite.Group()
 
-#setting up sprites
+#setting up player sprites
+#****will need to be changed once we add 2 player capability
 P1 = Classes.Player_Ship(PLAYER_ID)
 PLAYER_ID += 1
 all_sprites.add(P1)
 players.add(P1)
 
 
-#adding a new user event ****to be done
-ADD_ENEMY = pygame.USEREVENT + 1
-pygame.time.set_timer(ADD_ENEMY, 3000)
+#adding events, currently only spawning new enemies
+ADD_FIGHTER = pygame.USEREVENT + 1
+pygame.time.set_timer(ADD_FIGHTER, 3000)
+ADD_TANKER = pygame.USEREVENT + 2
+pygame.time.set_timer(ADD_TANKER, 12000)
+ADD_ZIPPER = pygame.USEREVENT + 3
+pygame.time.set_timer(ADD_ZIPPER, 20000)
 
-#adding functionality to display number of lives left
+#adding display for health left
 font = pygame.font.SysFont('arial', 22)
 health_text = font.render('Health: ' + str(P1.health), True, GREEN)
 
@@ -58,53 +70,103 @@ while True:
     
     #cycles throgh all events occuring
     for event in pygame.event.get():
+        #quits if we x out of game
         if event.type == QUIT:
             pygame.quit()
             sys.exit()
+        #catches if key is pressed
         if event.type == KEYDOWN:
+            #if space, player shoots
             if event.key == K_SPACE:
-                new_bullet = Classes.Bullet(P1.rect.center)
-                bullets.add(new_bullet)
-                all_sprites.add(new_bullet)
-        if event.type == ADD_ENEMY:
-            new_enemy = Classes.Enemy_Ship(ENEMY_ID)
+                new_proj = None
+                #creates projectile of current playernprojectile type and plays sound of type
+                if P1.proj_type == 'B':
+                    new_proj = Classes.Bullet(P1.rect.center)
+                    pygame.mixer.Sound.play(bullet_sound)
+                elif P1.proj_type == 'L':
+                    new_proj = Classes.Laser(P1.rect.center)
+                    pygame.mixer.Sound.play(laser_sound)
+                elif P1.proj_type == 'R':
+                    new_proj = Classes.Rocket(P1.rect.center)
+                    pygame.mixer.Sound.play(rocket_sound)
+                    
+                projectiles.add(new_proj)
+                all_sprites.add(new_proj)
+            #if enter, we know to change type of projectile (currently only cycles through)
+            if event.key == K_RETURN:
+                if P1.proj_type == 'B':
+                    P1.proj_type = 'L'
+                elif P1.proj_type == 'L':
+                    P1.proj_type = 'R'
+                else:
+                    P1.proj_type = 'B'
+        #catching when event timer runs out to add enemy of respective type
+        if event.type == ADD_FIGHTER:
+            new_enemy = Classes.Fighter(ENEMY_ID)
+            ENEMY_ID += 1
+            enemies.add(new_enemy)
+            all_sprites.add(new_enemy)
+        if event.type == ADD_TANKER:
+            new_enemy = Classes.Tanker(ENEMY_ID)
+            ENEMY_ID += 1
+            enemies.add(new_enemy)
+            all_sprites.add(new_enemy)
+        if event.type == ADD_ZIPPER:
+            new_enemy = Classes.Zipper(ENEMY_ID)
             ENEMY_ID += 1
             enemies.add(new_enemy)
             all_sprites.add(new_enemy)
 
     
     DISPLAYSURF.fill(BLACK)
-    DISPLAYSURF.blit(health_text, (100, 550))
     
+    #updating health
+    DISPLAYSURF.blit(health_text, (100, 550))
+
+    #cycling through all sprites, handles movement of sprite irregardless of type
     for entity in all_sprites:
         DISPLAYSURF.blit(entity.image, entity.rect)
         shoot = entity.move()
+        #catches when move returns True if entity is projectile from enemy
+        #same logic as player projectile
         if shoot != None:
-            new_bullet = Classes.Bullet(entity.rect.center, False)
-            bullets.add(new_bullet)
-            all_sprites.add(new_bullet)
-    
-    #loops to figure out owner of bullet
-    for bullet in bullets:
+            new_proj = None
+            if entity.proj_type == 'B':
+                new_proj = Classes.Bullet(entity.rect.center, False)
+                pygame.mixer.Sound.play(bullet_sound)
+            elif entity.proj_type == 'L':
+                new_proj = Classes.Laser(entity.rect.center, False)
+                pygame.mixer.Sound.play(laser_sound)
+            else:
+                new_proj = Classes.Rocket(entity.rect.center, False)
+                pygame.mixer.Sound.play(rocket_sound)
+            #adjusting speed of enemy projectiles to be half speed of its respective type
+            new_proj.speed /= 2
+            projectiles.add(new_proj)
+            all_sprites.add(new_proj)
+
+    #loops to figure out if projectile has collided with a ship and who is owner of proj
+    for proj in projectiles:
         #if from player we only want to consider collisions with enemy
-        if bullet.from_player:
+        if proj.from_player:
             for enemy in enemies:
-                if bullet.rect.colliderect(enemy.rect):
-                    if enemy.health <= 1:
+                if proj.rect.colliderect(enemy.rect):
+                    #if sub 0 health kill enemy
+                    if enemy.health - proj.damage <= 0:
                         enemy.kill()
                     else:
-                        enemy.health -= 1
-        #else only want to consider collisions with player
+                        enemy.health -= proj.damage
+        #if from enemy we only want to consider collisions with player
         else:
             for player in players:
-                if bullet.rect.colliderect(player.rect):
-                    #if on 1 health kill player
-                    if player.health <= 1:
+                if proj.rect.colliderect(player.rect):
+                    #if sub 0 health kill player
+                    if player.health - proj.damage <= 0:
                         health_text = font.render('Health: 0', True, GREEN)
                         player.kill()
                     #else just reduce
                     else:
-                        player.health -= 1
+                        player.health -= proj.damage
                         health_text = font.render('Health: ' + str(P1.health), True, GREEN)
     
     
