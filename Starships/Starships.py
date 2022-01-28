@@ -39,7 +39,6 @@ pygame.display.set_caption("Starships")
 
 
 #creating sprite groups
-
 enemies = pygame.sprite.Group()
 players = pygame.sprite.Group()
 projectiles = pygame.sprite.Group()

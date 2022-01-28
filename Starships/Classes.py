@@ -14,7 +14,9 @@ PURPLE = (128, 0, 128)
 #Other variables
 SCREEN_WIDTH = 1000
 SCREEN_HEIGHT = 600
-ENEMY_MOVEMENT = [-20, 20]
+ENEMY_MOVEMENT = [45, 120]
+
+
 
 
 class Player_Ship(pygame.sprite.Sprite):
@@ -56,12 +58,25 @@ class Fighter(pygame.sprite.Sprite):
     def __init__(self, ID):
 
         #attributes for enemy_ship
+
+        #we don't want ships moving at every iteration of game loop so we need to slow it down
         self.tick_adjuster = 0
+        #generates a random number from ENEMY_MOVEMENT upon tick_adjuster >= 100
+        self.how_far_move = 0
+        #either -1 (moving left) or 1 (moving right)
+        self.left_or_right = 1
+        #True when we have hit if statement in move(), false when we are on first hit
+        self.moving = False
+        #Health of enemy
         self.health = 1
+        #how many points are awarded upon kill
         self.worth = 1
+        #same concept as tick adjuster
         self.time_to_shoot = 0
         self.how_often_shoot = 100
+        #keeps track of type of projectile
         self.proj_type = 'B'
+        #ID number for ship, not really using right now but could be good to have
         self.ID = ID
         
         #drawing simple red square for enemy
@@ -75,7 +90,13 @@ class Fighter(pygame.sprite.Sprite):
     def move(self):
         #we want to randomize enemy movement though not at 60 FPS
         #using an adjuster that slows down actual movement
-        if self.tick_adjuster >= 4:
+        if self.tick_adjuster >= 100:
+            #if first time in if statement with respect to entering, self.moving will be false
+            #when it is, we need to generate a new movement
+            if self.moving == False:
+                self.moving = True
+                self.how_far_move = random.choice(ENEMY_MOVEMENT)
+                self.left_or_right = random.choice([-1,1])
             #if we are at left bound we don't want to randomize movement
             if self.rect.left <= 50:
                 self.rect.move_ip(100, 0)
@@ -84,9 +105,16 @@ class Fighter(pygame.sprite.Sprite):
                 self.rect.move_ip(-100, 0)
             #randomizing either moving left and right
             else:
-                speed = random.choice(ENEMY_MOVEMENT)
-                self.rect.move_ip(speed, 0)
-            self.tick_adjuster = 0
+                #moves ship 15 units either right or left. Note that this isn't affected by any
+                #time slowing mechanisms since we want this to be smooth movement.
+                self.rect.move_ip(15 * self.left_or_right, 0)
+                self.how_far_move -= 15
+                #if we run out of movement, we need to stop movement by zeroing tick adjuster and set moving to false
+    
+                if self.how_far_move <= 0:
+                    self.tick_adjuster = 0
+                    self.moving = False
+            
             
         #else we add 1 tick
         else:
@@ -104,10 +132,13 @@ class Tanker(pygame.sprite.Sprite):
 
         #attributes for enemy_ship
         self.tick_adjuster = 0
+        self.how_far_move = 0
+        self.left_or_right = 1
+        self.moving = False
         self.health = 5
         self.worth = 5
         self.time_to_shoot = 0
-        self.how_often_shoot = 250
+        self.how_often_shoot = 125
         self.proj_type = 'R'
         self.ID = ID
         
@@ -122,7 +153,11 @@ class Tanker(pygame.sprite.Sprite):
     def move(self):
         #we want to randomize enemy movement though not at 60 FPS
         #using an adjuster that slows down actual movement
-        if self.tick_adjuster >= 10:
+        if self.tick_adjuster >= 150:
+            if self.moving == False:
+                self.moving = True
+                self.how_far_move = random.choice(ENEMY_MOVEMENT) * 3
+                self.left_or_right = random.choice([-1,1])
             #if we are at left bound we don't want to randomize movement
             if self.rect.left <= 50:
                 self.rect.move_ip(100, 0)
@@ -131,9 +166,12 @@ class Tanker(pygame.sprite.Sprite):
                 self.rect.move_ip(-100, 0)
             #randomizing either moving left and right
             else:
-                speed = random.choice(ENEMY_MOVEMENT)
-                self.rect.move_ip(speed, 0)
-            self.tick_adjuster = 0
+                self.rect.move_ip(5 * self.left_or_right, 0)
+                self.how_far_move -= 5
+                if self.how_far_move <= 0:
+                    self.tick_adjuster = 0
+                    self.moving = False
+            
             
         #else we add 1 tick
         else:
@@ -151,6 +189,9 @@ class Zipper(pygame.sprite.Sprite):
 
         #attributes for enemy_ship
         self.tick_adjuster = 0
+        self.how_far_move = 0
+        self.left_or_right = 1
+        self.moving = False
         self.health = 2
         self.worth = 2
         self.time_to_shoot = 0
@@ -169,7 +210,11 @@ class Zipper(pygame.sprite.Sprite):
     def move(self):
         #we want to randomize enemy movement though not at 60 FPS
         #using an adjuster that slows down actual movement
-        if self.tick_adjuster >= 2:
+        if self.tick_adjuster >= 50:
+            if self.moving == False:
+                self.moving = True
+                self.how_far_move = random.choice(ENEMY_MOVEMENT)
+                self.left_or_right = random.choice([-1,1])
             #if we are at left bound we don't want to randomize movement
             if self.rect.left <= 50:
                 self.rect.move_ip(100, 0)
@@ -178,9 +223,12 @@ class Zipper(pygame.sprite.Sprite):
                 self.rect.move_ip(-100, 0)
             #randomizing either moving left and right
             else:
-                speed = random.choice(ENEMY_MOVEMENT)
-                self.rect.move_ip(speed, 0)
-            self.tick_adjuster = 0
+                self.rect.move_ip(15 * self.left_or_right, 0)
+                self.how_far_move -= 15
+                if self.how_far_move <= 0:
+                    self.tick_adjuster = 0
+                    self.moving = False
+            
             
         #else we add 1 tick
         else:
